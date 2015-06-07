@@ -4,14 +4,26 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import com.songli.codelinecount.exception.CLCException;
+
 public class FileUtil {
 
+    private static final Logger logger = LogManager.getLogger(FileUtil.class);
     private static final double ASCII_RATIO = 0.95;
 
     private FileUtil() {
     }
 
-    public static boolean isBinaryFile(File file) throws IOException {
+    public static boolean isBinaryFile(File file) throws IOException, CLCException {
+        if (!file.isFile()) {
+            throw new CLCException(file.getName() + " is not a file!");
+        }
+        
+        logger.debug("Check whether file " + file.getName() + "is binary");
+
         FileInputStream in = new FileInputStream(file);
         int size = in.available();
         if (size > 1024) {

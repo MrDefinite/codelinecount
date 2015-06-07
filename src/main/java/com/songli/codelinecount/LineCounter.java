@@ -6,6 +6,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.songli.codelinecount.exception.CLCException;
 import com.songli.codelinecount.model.FileInfoModel;
 import com.songli.codelinecount.model.FileResModel;
@@ -14,6 +17,7 @@ import com.songli.codelinecount.util.OutputUtil;
 
 public class LineCounter {
 
+    private static final Logger logger = LogManager.getLogger(LineCounter.class);
     private static final int PROCESS_ARRAY_SIZE = 8;
     private static volatile LineCounter counter;
 
@@ -37,7 +41,7 @@ public class LineCounter {
 
     private void initFileInfoByDirectory(File directory) {
         if (directory == null || !directory.isDirectory()) {
-            System.out.println("This is not a directory!");
+            logger.warn("This is not a directory!");
             return;
         }
 
@@ -64,7 +68,7 @@ public class LineCounter {
 
     private void initFileInfo(File file) {
         if (file == null || !file.isFile()) {
-            System.out.println("This is not a file!");
+            logger.warn("This is not a file!");
             return;
         }
 
@@ -138,7 +142,7 @@ public class LineCounter {
         final int processorNum = getProcessorNumber();
 
         for (int i = 0; i < processorNum; i++) {
-            System.out.println("Creating processor " + i);
+            logger.debug("Creating processor " + i);
             FileProcessor processor;
 
             if (i != processorNum - 1) {
@@ -162,18 +166,25 @@ public class LineCounter {
                 + 1;
     }
 
-    public void beginLineCount() {
+    public void beginLineCount() throws InterruptedException {
         List<FileProcessor> processors = createProcessors();
 
-        for (FileProcessor processor : processors) {
-            processor.run();
+        Thread[] threadPool = new Thread[processors.size()];
+
+        for (int i = 0; i < threadPool.length; i++) {
+            threadPool[i] = new Thread(processors.get(i));
+            threadPool[i].start();
+        }
+
+        for (int i = 0; i < threadPool.length; i++) {
+            threadPool[i].join();
         }
 
         generateResInfo();
     }
 
     public void outputLineCount() {
-        System.out.println("Begin output result!");
+        logger.info("Begin output result!");
         OutputUtil.printToConsole(resDict);
     }
 }
